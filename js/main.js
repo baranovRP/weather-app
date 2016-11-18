@@ -12,26 +12,16 @@ const ERROR_TYPE_CODES = [
 let tempK = 0;
 
 function getLocation() {
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const coordinates = {
-          latitude: Math.floor(position.coords.latitude * 100) / 100,
-          longitude: Math.floor(position.coords.longitude * 100) / 100,
-        };
+  const url = 'http://ipinfo.io/json';
 
-        resolve(coordinates);
-      },
-
-      (error) => {
-        let errorMessage = ERROR_TYPE_CODES[error.code];
-
-        if (error.code === 0 || error.code === 2) {
-          errorMessage += ` ${error.message}`;
-        }
-
-        reject(`Geolocation error: ${errorMessage}`);
-      });
+  return fetch(url).then((response) => {
+    if (!response.ok) {
+      const errorMessage =
+        `${ERROR_TYPE_CODES[0]}: ${response.status} (${response.statusText}) by fetching ${url}`;
+      console.log(errorMessage);
+      throw response;
+    }
+    return response.json();
   });
 }
 
@@ -39,7 +29,7 @@ function getWeather(coordinates) {
   const apiEndpoint = 'http://api.openweathermap.org';
   const appid = 'd34f85f7f7d240f79ee5e6d8ef0fdc26';
   const url =
-    `${apiEndpoint}/data/2.5/weather?lat=${coordinates.latitude}&lon=${coordinates.longitude}&APPID=${appid}`;
+    `${apiEndpoint}/data/2.5/weather?q=${coordinates.city},${coordinates.country}&APPID=${appid}`;
 
   return fetch(url).then((response) => {
     if (!response.ok) {
@@ -64,7 +54,7 @@ function render(forecast) {
   tempK = forecast.main.temp;
 
   forecastEl.innerHTML = '';
-  forecastEl.innerHTML = `<div class="city">Lodz,&nbsp;<span class="country">PL</span></div>
+  forecastEl.innerHTML = `<div class="city">${forecast.name},&nbsp;<span class="country">${forecast.sys.country}</span></div>
   <img class="icon" src="http://openweathermap.org/img/w/${forecast.weather[0].icon}.png" width="50px" height="50px" alt="${forecast.weather[0].main}"/>
   <div class="weather">${forecast.weather[0].main}</div>
   <div class="temperature">${kalvinToCelsius(tempK)}&deg;<button class="scale celsius" title="change scale">C</button>
